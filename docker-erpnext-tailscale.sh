@@ -123,6 +123,7 @@ volumes:
 EOF
 
 docker compose -p $PROJECT -f $ERPNEXT_YML -f $TEMPFILE $CMD $OPTS
+rm $ERPNEXT_YML
 rm $TEMPFILE
 
 if [ "$CMD" = "up" ]; then
