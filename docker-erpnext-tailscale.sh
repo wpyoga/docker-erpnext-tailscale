@@ -122,17 +122,27 @@ volumes:
   tailscale-data:
 EOF
 
-docker compose -p $PROJECT -f $ERPNEXT_YML -f $TEMPFILE $CMD $OPTS
+PODMAN_YML=`mktemp`
+cat >$PODMAN_YML <<EOF
+x-podman:
+  name_separator_compat: true
+EOF
+
+DOCKER=`which docker` \
+  || DOCKER=`which podman` \
+  || { echo "docker and podman not found"; exit 1; }
+
+$DOCKER compose -p $PROJECT -f $ERPNEXT_YML -f $TEMPFILE -f $PODMAN_YML $CMD $OPTS
 rm $ERPNEXT_YML
 rm $TEMPFILE
 
 if [ "$CMD" = "up" ]; then
   echo "The first time $PROJECT-tailscale-1 runs, check the logs for the login link."
-  echo "docker logs -f $PROJECT-tailscale-1"
+  echo "$DOCKER logs -f $PROJECT-tailscale-1"
 fi
 
 if [ "$CMD" = "down" ]; then
   echo "Check dangling volumes and prune any unused ones."
-  echo "docker volumes ls"
+  echo "$DOCKER volume ls"
 fi
 
