@@ -2,10 +2,11 @@
 
 usage() {
   cat <<EOF
-usage: $0 <version> [--down] <project> <tailnet>
+usage: $0 <version> [--down|--restart] <project> <tailnet>
 
   version     currently only 13, 14, or 15
   --down      stop and remove containers (default is start and run)
+  --restart   restart containers
   project     project name
   tailnet     tailnet name
 
@@ -31,7 +32,14 @@ case "$VER" in
     NO_NETWORK_NAME='#'
     ;;
   15)
+    # v15.94.3
     YML_URL=https://github.com/frappe/frappe_docker/raw/bc254c2b4ceb9d01dbdd598ace2053326120d27f/pwd.yml
+    # v15.94.2
+    #YML_URL=https://github.com/frappe/frappe_docker/raw/56c6520e2905b2bdaf981db9293b20a4408e520d/pwd.yml
+    # v15.92.5
+    #YML_URL=https://github.com/frappe/frappe_docker/raw/43863d2537ed05549cceeab166ec695dd578b37b/pwd.yml
+    # v15.85.1
+    #YML_URL=https://github.com/frappe/frappe_docker/raw/78d21c2f4e79ac3974f4f4484290b8da4ba1adc0/pwd.yml
     NO_RESTART='#'
     NO_NETWORK_NAME=''
     ;;
@@ -49,6 +57,10 @@ CMD="up"
 OPTS="-d"
 if [ "$1" = "--down" ]; then
   CMD="down"
+  OPTS=
+  shift
+elif [ "$1" = "--restart" ]; then
+  CMD="restart"
   OPTS=
   shift
 fi
@@ -97,8 +109,52 @@ $NO_RESTART  create-site:
 $NO_RESTART    deploy:
 $NO_RESTART      restart_policy: !override
 $NO_RESTART        condition: none
+  scheduler:
+    depends_on:
+      - redis-queue
+  queue-long:
+    depends_on:
+      - redis-queue
+    deploy:
+      restart_policy:
+        condition: unless-stopped
+  queue-short:
+    depends_on:
+      - redis-queue
+    deploy:
+      restart_policy:
+        condition: unless-stopped
+  websocket:
+    depends_on:
+      - redis-queue
+  backend:
+    depends_on:
+      - db
+    deploy:
+      restart_policy:
+        condition: unless-stopped
+
   frontend:
     ports: !reset
+    depends_on:
+      - backend
+      - websocket
+
+  redis-queue:
+    deploy:
+      restart_policy:
+        condition: unless-stopped
+  redis-cache:
+    deploy:
+      restart_policy:
+        condition: unless-stopped
+
+  db:
+    deploy:
+      restart_policy:
+        condition: unless-stopped
+
+
   tailscale:
     image: tailscale/tailscale:latest
     hostname: $PROJECT
@@ -118,6 +174,8 @@ $NO_NETWORK_NAME      - frappe_network
       - net_admin
       - sys_module
     restart: unless-stopped
+    depends_on:
+      - frontend
 volumes:
   tailscale-data:
 EOF
