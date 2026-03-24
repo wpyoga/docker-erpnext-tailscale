@@ -32,8 +32,10 @@ case "$VER" in
     NO_NETWORK_NAME='#'
     ;;
   15)
+    # v15.96.1 -- last v15 version
+    YML_URL=https://github.com/frappe/frappe_docker/raw/3d46cb84e08bf37273beb877a254b97131e6abf5/pwd.yml
     # v15.94.3
-    YML_URL=https://github.com/frappe/frappe_docker/raw/bc254c2b4ceb9d01dbdd598ace2053326120d27f/pwd.yml
+    #YML_URL=https://github.com/frappe/frappe_docker/raw/bc254c2b4ceb9d01dbdd598ace2053326120d27f/pwd.yml
     # v15.94.2
     #YML_URL=https://github.com/frappe/frappe_docker/raw/56c6520e2905b2bdaf981db9293b20a4408e520d/pwd.yml
     # v15.92.5
